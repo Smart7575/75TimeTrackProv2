@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Project Validation
+    function isValidProject(data) {
+      return data.keys().hasAll(['name', 'client', 'activities']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.client is string && data.client.size() > 0 && data.client.size() < 100 &&
+             data.activities is list && data.activities.size() <= 50;
+    }
+
+    // Entry Validation
+    function isValidEntry(data) {
+      return data.keys().hasAll(['projectId', 'activityId', 'startTime', 'durationInMinutes', 'classification']) &&
+             data.projectId is string && data.activityId is string &&
+             data.startTime is timestamp &&
+             data.durationInMinutes is number && data.durationInMinutes >= 0 &&
+             data.classification in ['core', 'additional', 'development', 'admin', 'absence'];
+    }
+
+    // Task Validation
+    function isValidTask(data) {
+      return data.keys().hasAll(['name', 'subTasks']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.subTasks is list && data.subTasks.size() <= 50;
+    }
+
+    // Settings Validation
+    function isValidSettings(data) {
+      return data.keys().hasAll(['coreNorm', 'language', 'theme']) &&
+             data.coreNorm is number && data.coreNorm >= 0 &&
+             data.language is string && data.theme is string;
+    }
+
+    // Client Validation
+    function isValidClient(data) {
+      return data.keys().hasAll(['name', 'contactPersons']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.contactPersons is list;
+    }
+
+    match /users/{userId} {
+      // Identity Protection Gate
+      allow read, write: if isOwner(userId);
+
+      match /projects/{projectId} {
+        allow read, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming());
+        allow update: if isOwner(userId) && isValidProject(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'client', 'color', 'budget', 'rate', 'activities', 'archived']);
+        allow delete: if isOwner(userId);
+      }
+
+      match /clients/{clientId} {
+        allow read, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(clientId) && isValidClient(incoming());
+        allow update: if isOwner(userId) && isValidClient(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'postcode', 'street', 'houseNumber', 'city', 'state', 'country', 'phone', 'email', 'kvk', 'contactPersons', 'archived']);
+        allow delete: if isOwner(userId);
+      }
+
+      match /entries/{entryId} {
+        allow read, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(entryId) && isValidEntry(incoming());
+        allow update: if isOwner(userId) && isValidEntry(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['projectId', 'activityId', 'startTime', 'endTime', 'notes', 'durationInMinutes', 'classification']);
+        allow delete: if isOwner(userId);
+      }
+
+      match /coreTasks/{taskId} {
+        allow read, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(taskId) && isValidTask(incoming());
+        allow update: if isOwner(userId) && isValidTask(incoming());
+        allow delete: if isOwner(userId);
+      }
+
+      match /settings/general {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId) && isValidSettings(incoming());
+      }
+    }
+  }
+}

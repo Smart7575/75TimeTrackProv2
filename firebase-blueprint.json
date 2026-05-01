@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A client project with activities and budget",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "client": { "type": "string" },
+        "clientId": { "type": "string" },
+        "color": { "type": "string" },
+        "budget": { "type": "number" },
+        "rate": { "type": "number" },
+        "archived": { "type": "boolean" },
+        "activities": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["name", "client"]
+    },
+    "CoreTask": {
+      "title": "Core Task",
+      "description": "High level categorization of work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "subTasks": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["name"]
+    },
+    "TimeEntry": {
+      "title": "Time Entry",
+      "description": "A single record of work done",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "activityId": { "type": "string" },
+        "notes": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "durationInMinutes": { "type": "number" },
+        "classification": { "type": "string", "enum": ["core", "development", "admin", "absence"] }
+      },
+      "required": ["projectId", "activityId", "startTime", "endTime"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User preferences",
+      "type": "object",
+      "properties": {
+        "coreNorm": { "type": "number" },
+        "language": { "type": "string" },
+        "theme": { "type": "string" }
+      }
+    },
+    "Client": {
+      "title": "Client",
+      "description": "An organization or individual that orders work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "postcode": { "type": "string" },
+        "street": { "type": "string" },
+        "houseNumber": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "country": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "kvk": { "type": "string" },
+        "archived": { "type": "boolean" },
+        "contactPersons": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/projects": {
+      "schema": "Project",
+      "description": "User's projects"
+    },
+    "users/{userId}/clients": {
+      "schema": "Client",
+      "description": "User's predefined clients"
+    },
+    "users/{userId}/coreTasks": {
+      "schema": "CoreTask",
+      "description": "User's core tasks categories"
+    },
+    "users/{userId}/entries": {
+      "schema": "TimeEntry",
+      "description": "User's time registration history"
+    },
+    "users/{userId}/settings/general": {
+      "schema": "Settings",
+      "description": "User's application settings"
+    }
+  }
+}
