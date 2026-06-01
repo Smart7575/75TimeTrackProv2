@@ -85,7 +85,7 @@ const Navigation: React.FC = () => {
             <p className={cn(
               "text-sm font-medium truncate",
               settings.theme === 'light' ? "text-slate-900" : "text-white"
-            )}>{user?.displayName || (user?.email ? user.email.split('@')[0] : 'Gebruiker')}</p>
+            )}>{user?.displayName || (user?.email ? user.email.split('@')[0] : t.user)}</p>
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold truncate">{user?.email}</p>
           </div>
         </div>
@@ -100,7 +100,7 @@ const Navigation: React.FC = () => {
           )}
         >
           <LogOut size={14} strokeWidth={3} />
-          Uitloggen
+          {t.logout}
         </button>
       </div>
     </aside>

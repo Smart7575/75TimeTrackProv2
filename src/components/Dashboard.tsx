@@ -9,15 +9,18 @@ import {
   CheckCircle2, 
   AlertCircle,
   TrendingUp,
-  History
+  History,
+  X,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parseISO, setHours, setMinutes, addMonths } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { 
     projects, entries, settings, activeTimer, 
-    startTimer, stopTimer, addEntry, setActiveTab 
+    startTimer, stopTimer, addEntry, deleteEntry, updateEntry, setActiveTab 
   } = useApp();
   const t = translations[settings.language];
   
@@ -29,6 +32,16 @@ const Dashboard: React.FC = () => {
     date: format(new Date(), 'yyyy-MM-dd'),
     startTime: '09:00',
     endTime: '10:00'
+  });
+
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState({
+    projectId: '',
+    activityId: '',
+    startTime: '09:00',
+    endTime: '',
+    notes: '',
+    date: format(new Date(), 'yyyy-MM-dd')
   });
 
   // Today's total time
@@ -128,6 +141,54 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const startEditing = (entry: any) => {
+    setEditingEntry(entry);
+    setEditFormData({
+      projectId: entry.projectId,
+      activityId: entry.activityId,
+      startTime: entry.startTime ? format(entry.startTime, 'HH:mm') : '09:00',
+      endTime: entry.endTime ? format(entry.endTime, 'HH:mm') : '',
+      notes: entry.notes || '',
+      date: entry.startTime ? format(entry.startTime, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+    });
+  };
+
+  const saveEdit = () => {
+    if (!editingEntry) return;
+
+    const [startH, startM] = editFormData.startTime.split(':').map(Number);
+    const [endH, endM] = editFormData.endTime ? editFormData.endTime.split(':').map(Number) : [null, null];
+    
+    const baseDate = parseISO(editFormData.date);
+    const newStartTime = setMinutes(setHours(baseDate, startH), startM);
+    
+    let newEndTime = null;
+    let durationInMinutes = 0;
+
+    if (endH !== null && endM !== null) {
+      newEndTime = setMinutes(setHours(baseDate, endH), endM);
+      if (newEndTime < newStartTime) {
+        newEndTime = addMonths(newEndTime, 0);
+      }
+      durationInMinutes = Math.round((newEndTime.getTime() - newStartTime.getTime()) / 60000);
+    }
+
+    const project = projects.find(p => p.id === editFormData.projectId);
+    const activity = (project?.activities || []).find(a => a.id === editFormData.activityId);
+
+    updateEntry(editingEntry.id, {
+      projectId: editFormData.projectId,
+      activityId: editFormData.activityId,
+      startTime: newStartTime,
+      endTime: newEndTime || undefined,
+      durationInMinutes: durationInMinutes > 0 ? durationInMinutes : editingEntry.durationInMinutes,
+      notes: editFormData.notes,
+      classification: activity?.classification || editingEntry.classification
+    });
+
+    setEditingEntry(null);
+  };
+
   const selectedProjectObj = projects.find(p => p.id === selectedProject);
 
   return (
@@ -197,7 +258,7 @@ const Dashboard: React.FC = () => {
                   }}
                 >
                   <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Project selecteren</option>
-                  {projects.filter(p => !p.archived).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
+                  {projects.filter(p => !p.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -212,7 +273,7 @@ const Dashboard: React.FC = () => {
                   disabled={!selectedProject}
                 >
                   <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Activiteit selecteren</option>
-                  {(selectedProjectObj?.activities || []).filter(a => !a.archived).map(a => <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>)}
+                  {(selectedProjectObj?.activities || []).filter(a => !a.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>)}
                 </select>
               </div>
             </div>
@@ -417,6 +478,7 @@ const Dashboard: React.FC = () => {
                 <th className="pb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.date}</th>
                 <th className="pb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.duration}</th>
                 <th className="pb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.notes}</th>
+                <th className="pb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">{t.actions}</th>
               </tr>
             </thead>
             <tbody className={cn("divide-y", settings.theme === 'light' ? "divide-slate-50" : "divide-slate-800/30")}>
@@ -436,8 +498,8 @@ const Dashboard: React.FC = () => {
                     </td>
                     <td className="py-5">
                        <span className={cn(
-                         "text-xs px-2 py-1 rounded-md border transition-colors",
-                         settings.theme === 'light' ? "text-slate-500 bg-slate-50 border-slate-200 group-hover:border-slate-300" : "text-slate-400 bg-slate-900 border-slate-800 group-hover:border-slate-700"
+                          "text-xs px-2 py-1 rounded-md border transition-colors",
+                          settings.theme === 'light' ? "text-slate-500 bg-slate-50 border-slate-200 group-hover:border-slate-300" : "text-slate-400 bg-slate-900 border-slate-800 group-hover:border-slate-700"
                        )}>
                          {activity?.name}
                        </span>
@@ -453,18 +515,162 @@ const Dashboard: React.FC = () => {
                     <td className="py-5 text-slate-500 text-xs truncate max-w-sm italic opacity-80 group-hover:opacity-100 transition-opacity">
                       {entry.notes || '-'}
                     </td>
+                    <td className="py-5 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => startEditing(entry)}
+                          className={cn(
+                            "p-2 rounded-xl border transition-colors",
+                            settings.theme === 'light' ? "bg-white text-slate-400 hover:text-sky-500 border-slate-200" : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
+                          )}
+                          title={t.edit}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          onClick={() => { if(confirm(settings.language === 'nl' ? 'Verwijderen?' : 'Delete?')) deleteEntry(entry.id); }}
+                          className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl border border-red-500/20 transition-colors"
+                          title={t.delete}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {last5.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-600 text-sm italic">Geen recente activiteiten om weer te geven.</td>
+                  <td colSpan={6} className="py-12 text-center text-slate-600 text-sm italic">{t.noRecentActivities}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingEntry && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className={cn(
+            "w-full max-w-2xl rounded-3xl border shadow-2xl p-10 space-y-8 animate-in zoom-in-95 duration-300",
+            settings.theme === 'light' ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
+          )}>
+            <div className="flex items-center justify-between">
+              <h2 className={cn("text-2xl font-black uppercase tracking-tight italic", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{t.editTimeEntry || 'Tijdregistratie Bewerken'}</h2>
+              <button 
+                onClick={() => setEditingEntry(null)} 
+                className="p-2 hover:bg-slate-800 rounded-xl transition-colors text-slate-500"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.project}</label>
+                <select 
+                  value={editFormData.projectId}
+                  onChange={(e) => {
+                    const project = projects.find(p => p.id === e.target.value);
+                    setEditFormData({...editFormData, projectId: e.target.value, activityId: (project?.activities || [])[0]?.id || ''});
+                  }}
+                  className={cn(
+                    "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                  )}
+                >
+                  {projects.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.activity}</label>
+                <select 
+                  value={editFormData.activityId}
+                  onChange={(e) => setEditFormData({...editFormData, activityId: e.target.value})}
+                  className={cn(
+                    "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                  )}
+                >
+                  {(projects.find(p => p.id === editFormData.projectId)?.activities || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => (
+                    <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.date}</label>
+                <input 
+                  type="date"
+                  value={editFormData.date}
+                  onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                  className={cn(
+                    "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all text-sm font-bold",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Begin</label>
+                  <input 
+                    type="time"
+                    value={editFormData.startTime}
+                    onChange={(e) => setEditFormData({...editFormData, startTime: e.target.value})}
+                    className={cn(
+                      "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all text-sm font-bold text-center",
+                      settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Einde</label>
+                  <input 
+                    type="time"
+                    value={editFormData.endTime}
+                    onChange={(e) => setEditFormData({...editFormData, endTime: e.target.value})}
+                    className={cn(
+                      "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all text-sm font-bold text-center",
+                      settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.notes}</label>
+              <textarea 
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
+                className={cn(
+                  "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all text-sm font-medium h-24 resize-none",
+                  settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                )}
+                placeholder="..."
+              />
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4 border-t border-slate-800">
+              <button 
+                onClick={() => setEditingEntry(null)}
+                className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-colors"
+              >
+                {t.cancel}
+              </button>
+              <button 
+                onClick={saveEdit}
+                className="px-10 py-4 bg-sky-500 text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-sky-500/20 active:scale-95 transition-all"
+              >
+                {t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -33,10 +33,24 @@ const DeleteConfirmationModal: React.FC<{
   otherOptions: { id: string; name: string }[];
   affectedEntriesCount: number;
 }> = ({ isOpen, onClose, type, projectName, activityName, onConfirm, otherOptions, affectedEntriesCount }) => {
+  const { settings } = useApp();
+  const t = translations[settings.language];
   const [action, setAction] = useState<'delete' | 'archive'>('delete');
   const [reassignToId, setReassignToId] = useState<string>('');
 
   if (!isOpen) return null;
+
+  const deleteMsg = settings.language === 'nl' 
+    ? `Je staat op het punt om ${type === 'project' ? `project "${projectName}"` : `activiteit "${activityName}"`} te verwijderen.`
+    : `You are about to delete ${type === 'project' ? `project "${projectName}"` : `activity "${activityName || ''}"`}.`;
+
+  const warningMsg = affectedEntriesCount > 0
+    ? (settings.language === 'nl'
+      ? `LET OP: Er zijn ${affectedEntriesCount} urenregels die hiermee verbonden zijn.`
+      : `WARNING: There are ${affectedEntriesCount} time entries connected to this.`)
+    : (settings.language === 'nl'
+      ? `Er zijn geen urenregels verbonden aan dit item.`
+      : `There are no time entries connected to this item.`);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
@@ -48,18 +62,12 @@ const DeleteConfirmationModal: React.FC<{
             <AlertTriangle size={32} />
           </div>
           
-          <h3 className="text-xl font-black text-white uppercase italic tracking-widest mb-2">Bevestig Verwijdering</h3>
+          <h3 className="text-xl font-black text-white uppercase italic tracking-widest mb-2">{t.confirmDeletion}</h3>
           <p className="text-sm text-slate-400 mb-8 font-medium">
-            Je staat op het punt om {type === 'project' ? `project "${projectName}"` : `activiteit "${activityName}"`} te verwijderen.
-            {affectedEntriesCount > 0 ? (
-              <span className="block mt-2 text-red-400 font-black">
-                LET OP: Er zijn {affectedEntriesCount} urenregels die hiermee verbonden zijn.
-              </span>
-            ) : (
-              <span className="block mt-2 text-emerald-500 font-black">
-                Er zijn geen urenregels verbonden aan dit item.
-              </span>
-            )}
+            {deleteMsg}
+            <span className={cn("block mt-2 font-black", affectedEntriesCount > 0 ? "text-red-400" : "text-emerald-500")}>
+              {warningMsg}
+            </span>
           </p>
 
           <div className="w-full space-y-4 mb-10">
@@ -72,7 +80,7 @@ const DeleteConfirmationModal: React.FC<{
             >
               <div className="flex items-center gap-3">
                 <Trash2 size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Hard Verwijderen</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t.hardDelete}</span>
               </div>
               <div className={cn("w-4 h-4 rounded-full border-2", action === 'delete' ? "bg-red-500 border-white/20" : "border-slate-700")} />
             </button>
@@ -86,14 +94,14 @@ const DeleteConfirmationModal: React.FC<{
             >
               <div className="flex items-center gap-3">
                 <Archive size={20} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Archiveren (Aanbevolen)</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t.archive}</span>
               </div>
               <div className={cn("w-4 h-4 rounded-full border-2", action === 'archive' ? "bg-sky-500 border-white/20" : "border-slate-700")} />
             </button>
 
             {action === 'delete' && otherOptions.length > 0 && (
               <div className="pt-4 space-y-3 animate-in slide-in-from-top-2 duration-300">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-left ml-4">Herassigneren naar:</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-left ml-4">{t.reassignTo}</p>
                 <div className="relative group">
                   <ArrowRight className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400" size={16} />
                   <select 
@@ -101,7 +109,7 @@ const DeleteConfirmationModal: React.FC<{
                     onChange={(e) => setReassignToId(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all text-[10px] font-black uppercase tracking-widest text-white appearance-none"
                   >
-                    <option value="" className="bg-slate-900">Niet herassigneren (Uren wissen)</option>
+                    <option value="" className="bg-slate-900">{t.doNotReassign}</option>
                     {otherOptions.map(opt => (
                       <option key={opt.id} value={opt.id} className="bg-slate-900">{opt.name}</option>
                     ))}
@@ -116,7 +124,7 @@ const DeleteConfirmationModal: React.FC<{
               onClick={onClose}
               className="flex-1 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
             >
-              Annuleren
+              {t.cancel}
             </button>
             <button 
               onClick={() => onConfirm(action, reassignToId || undefined)}
@@ -125,7 +133,7 @@ const DeleteConfirmationModal: React.FC<{
                 action === 'delete' ? "bg-red-500 text-white shadow-red-500/20" : "bg-sky-500 text-slate-950 shadow-sky-500/20"
               )}
             >
-              Definitief
+              {t.definitief}
             </button>
           </div>
         </div>
@@ -267,8 +275,8 @@ const Projects: React.FC = () => {
         }
         otherOptions={
           deleteDialog?.type === 'project' 
-            ? projects.filter(p => p.id !== deleteDialog.projectId && !p.archived).map(p => ({ id: p.id, name: p.name }))
-            : projects.find(p => p.id === deleteDialog?.projectId)?.activities.filter(a => a.id !== deleteDialog.activityId && !a.archived).map(a => ({ id: a.id, name: a.name })) || []
+            ? projects.filter(p => p.id !== deleteDialog.projectId && !p.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => ({ id: p.id, name: p.name }))
+            : projects.find(p => p.id === deleteDialog?.projectId)?.activities.filter(a => a.id !== deleteDialog.activityId && !a.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ id: a.id, name: a.name })) || []
         }
       />
 

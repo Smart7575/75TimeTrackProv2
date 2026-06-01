@@ -233,7 +233,7 @@ const TimeRegister: React.FC = () => {
               )}
             >
               <option value="all" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.all} {t.project}</option>
-              {projects.filter(p => !p.archived).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
+              {projects.filter(p => !p.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
             </select>
           </div>
 
@@ -413,7 +413,7 @@ const TimeRegister: React.FC = () => {
                     settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
                   )}
                 >
-                  {projects.map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
+                  {projects.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
                 </select>
               </div>
 
@@ -427,7 +427,7 @@ const TimeRegister: React.FC = () => {
                     settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
                   )}
                 >
-                  {(projects.find(p => p.id === editFormData.projectId)?.activities || []).map(a => (
+                  {(projects.find(p => p.id === editFormData.projectId)?.activities || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                     <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>
                   ))}
                 </select>

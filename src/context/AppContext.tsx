@@ -114,17 +114,19 @@ interface AppContextType extends AppState {
   cancelTimer: () => void;
 }
 
-const sanitizeForFirestore = (obj: any) => {
-  const sanitized = { ...obj };
-  Object.keys(sanitized).forEach(key => {
-    if (sanitized[key] === undefined) {
-      delete sanitized[key];
-    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null && !Array.isArray(sanitized[key])) {
-      sanitized[key] = sanitizeForFirestore(sanitized[key]);
-    } else if (Array.isArray(sanitized[key])) {
-      sanitized[key] = sanitized[key].map((item: any) => 
-        (typeof item === 'object' && item !== null) ? sanitizeForFirestore(item) : item
-      );
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
+  if (typeof obj.toDate === 'function') return obj; // Typically Firestore Timestamp
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item));
+  }
+
+  const sanitized: any = {};
+  Object.keys(obj).forEach(key => {
+    if (obj[key] !== undefined) {
+      sanitized[key] = sanitizeForFirestore(obj[key]);
     }
   });
   return sanitized;

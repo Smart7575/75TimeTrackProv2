@@ -12,16 +12,22 @@ import {
   ResponsiveContainer,
   Cell,
   PieChart,
-  Pie
+  Pie,
+  LabelList
 } from 'recharts';
 import { 
   format, 
   startOfMonth, 
   endOfMonth, 
+  startOfWeek,
+  endOfWeek,
+  getWeek,
   eachDayOfInterval, 
   isWithinInterval,
   subMonths,
-  addMonths
+  addMonths,
+  subWeeks,
+  addWeeks
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, BarChart3, TrendingUp } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -31,39 +37,59 @@ const Reports: React.FC = () => {
   const t = translations[settings.language];
   
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [reportType, setReportType] = useState<'week' | 'month'>('month');
 
-  const monthRange = useMemo(() => ({
-    start: startOfMonth(currentDate),
-    end: endOfMonth(currentDate)
-  }), [currentDate]);
+  const dateRange = useMemo(() => {
+    if (reportType === 'week') {
+      return {
+        start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+        end: endOfWeek(currentDate, { weekStartsOn: 1 })
+      };
+    }
+    return {
+      start: startOfMonth(currentDate),
+      end: endOfMonth(currentDate)
+    };
+  }, [currentDate, reportType]);
 
-  const monthEntries = useMemo(() => {
-    return entries.filter(e => e.startTime && isWithinInterval(e.startTime, monthRange));
-  }, [entries, monthRange]);
+  const filteredEntries = useMemo(() => {
+    return entries.filter(e => e.startTime && isWithinInterval(e.startTime, dateRange));
+  }, [entries, dateRange]);
 
   // Total stats
-  const totalMinutes = monthEntries.reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
-  const coreMinutes = monthEntries.filter(e => e.classification === 'core').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
-  const additionalMinutes = monthEntries.filter(e => e.classification === 'additional').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
+  const totalMinutes = filteredEntries.reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
+  const coreMinutes = filteredEntries.filter(e => e.classification === 'core').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
+  const additionalMinutes = filteredEntries.filter(e => e.classification === 'additional').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0);
   
   const corePercentage = totalMinutes > 0 ? (coreMinutes / totalMinutes) * 100 : 0;
   const additionalPercentage = totalMinutes > 0 ? (additionalMinutes / totalMinutes) * 100 : 0;
 
   // Chart data: Stacked bar chart per day
-  const daysInMonth = eachDayOfInterval(monthRange);
-  const dailyData = daysInMonth.map(day => {
+  const daysInInterval = eachDayOfInterval(dateRange);
+  const dailyData = daysInInterval.map(day => {
     const dayFormat = format(day, 'yyyy-MM-dd');
-    const dayEntries = monthEntries.filter(e => e.startTime && format(e.startTime, 'yyyy-MM-dd') === dayFormat);
+    const dayEntries = filteredEntries.filter(e => e.startTime && format(e.startTime, 'yyyy-MM-dd') === dayFormat);
+    
+    let dayName = '';
+    if (reportType === 'week') {
+      const weekdaysNl = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+      const weekdaysEn = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+      const dayIndex = day.getDay();
+      dayName = `${settings.language === 'nl' ? weekdaysNl[dayIndex] : weekdaysEn[dayIndex]} ${format(day, 'dd')}`;
+    } else {
+      dayName = format(day, 'dd');
+    }
+
     return {
-      name: format(day, 'dd'),
+      name: dayName,
       core: parseFloat((dayEntries.filter(e => e.classification === 'core').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60).toFixed(1)),
       additional: parseFloat((dayEntries.filter(e => e.classification === 'additional').reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60).toFixed(1))
     };
-  }).filter(d => d.core > 0 || d.additional > 0);
+  }).filter(d => reportType === 'week' || d.core > 0 || d.additional > 0);
 
   // Chart data: Hours per project
   const projectData = projects.map(project => {
-    const hours = monthEntries
+    const hours = filteredEntries
       .filter(e => e.projectId === project.id)
       .reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60;
     return { name: project.name, value: parseFloat(hours.toFixed(1)), color: project.color };
@@ -73,7 +99,7 @@ const Reports: React.FC = () => {
   const clientData = useMemo(() => {
     const clientMap: Record<string, { minutes: number; color: string }> = {};
     
-    monthEntries.forEach(entry => {
+    filteredEntries.forEach(entry => {
       const project = projects.find(p => p.id === entry.projectId);
       if (project) {
         // Prefer clientId, fallback to project.client (name)
@@ -93,7 +119,7 @@ const Reports: React.FC = () => {
       value: parseFloat((data.minutes / 60).toFixed(1)),
       color: data.color
     })).sort((a, b) => b.value - a.value);
-  }, [monthEntries, projects, clients]);
+  }, [filteredEntries, projects, clients]);
 
   // Chart data: Hours per core task
   const coreTaskData = coreTasks.map(task => {
@@ -102,7 +128,7 @@ const Reports: React.FC = () => {
       .filter(a => a.coreSubTaskId && subTaskIds.includes(a.coreSubTaskId))
       .map(a => a.id);
     
-    const hours = monthEntries
+    const hours = filteredEntries
       .filter(e => activityIds.includes(e.activityId))
       .reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60;
     
@@ -116,13 +142,29 @@ const Reports: React.FC = () => {
         .filter(a => a.coreSubTaskId === sub.id)
         .map(a => a.id);
       
-      const hours = monthEntries
+      const hours = filteredEntries
         .filter(e => activityIds.includes(e.activityId))
         .reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60;
       
       return { name: sub.name, value: parseFloat(hours.toFixed(1)) };
     })
   ).filter(t => t.value > 0).sort((a, b) => b.value - a.value);
+
+  const handlePrev = () => {
+    if (reportType === 'week') {
+      setCurrentDate(subWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(subMonths(currentDate, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (reportType === 'week') {
+      setCurrentDate(addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
 
   return (
     <div className="space-y-8 pb-10">
@@ -139,34 +181,81 @@ const Reports: React.FC = () => {
             <BarChart3 className="text-sky-400" size={28} />
             {t.reports}
           </h2>
-          <div className={cn(
-            "flex items-center gap-2 p-1.5 rounded-2xl border backdrop-blur-md",
-            settings.theme === 'light' ? "bg-slate-50 border-slate-200" : "bg-slate-900/60 border-slate-800/50"
-          )}>
-            <button 
-              onClick={() => setCurrentDate(subMonths(currentDate, 1))} 
-              className={cn(
-                "p-2 rounded-xl transition-all",
-                settings.theme === 'light' ? "hover:bg-white text-slate-400 hover:text-sky-500" : "hover:bg-slate-800 text-slate-400 hover:text-white"
-              )}
-            >
-              <ChevronLeft size={20} />
-            </button>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            {/* Week / Month Toggle */}
             <div className={cn(
-              "px-6 py-2 font-black min-w-[180px] text-center uppercase tracking-[0.2em] text-xs",
-              settings.theme === 'light' ? "text-slate-900" : "text-white"
+              "flex p-1 rounded-2xl border backdrop-blur-md self-center sm:self-auto",
+              settings.theme === 'light' ? "bg-slate-50 border-slate-200" : "bg-slate-950/60 border-slate-800/50"
             )}>
-              {format(currentDate, 'MMMM yyyy')}
+              <button
+                onClick={() => {
+                  setReportType('week');
+                  setCurrentDate(new Date());
+                }}
+                className={cn(
+                  "px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all",
+                  reportType === 'week'
+                    ? (settings.theme === 'light' ? "bg-white text-sky-500 shadow-sm" : "bg-slate-800 text-white")
+                    : "text-slate-400 hover:text-slate-500"
+                )}
+              >
+                {t.week}
+              </button>
+              <button
+                onClick={() => {
+                  setReportType('month');
+                  setCurrentDate(new Date());
+                }}
+                className={cn(
+                  "px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all",
+                  reportType === 'month'
+                    ? (settings.theme === 'light' ? "bg-white text-sky-500 shadow-sm" : "bg-slate-800 text-white")
+                    : "text-slate-400 hover:text-slate-500"
+                )}
+              >
+                {settings.language === 'nl' ? 'Maand' : 'Month'}
+              </button>
             </div>
-            <button 
-              onClick={() => setCurrentDate(addMonths(currentDate, 1))} 
-              className={cn(
-                "p-2 rounded-xl transition-all",
-                settings.theme === 'light' ? "hover:bg-white text-slate-400 hover:text-sky-500" : "hover:bg-slate-800 text-slate-400 hover:text-white"
-              )}
-            >
-              <ChevronRight size={20} />
-            </button>
+
+            {/* Date Navigator */}
+            <div className={cn(
+              "flex items-center gap-2 p-1.5 rounded-2xl border backdrop-blur-md justify-between sm:justify-start",
+              settings.theme === 'light' ? "bg-slate-50 border-slate-200" : "bg-slate-950/60 border-slate-800/50"
+            )}>
+              <button 
+                onClick={handlePrev} 
+                className={cn(
+                  "p-2 rounded-xl transition-all",
+                  settings.theme === 'light' ? "hover:bg-white text-slate-400 hover:text-sky-500" : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                )}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div className={cn(
+                "px-4 py-1 font-black min-w-[190px] text-center uppercase tracking-[0.1em] text-[10px] flex flex-col items-center justify-center",
+                settings.theme === 'light' ? "text-slate-900" : "text-white"
+              )}>
+                <span className="font-extrabold tracking-[0.15em] mb-0.5">
+                  {reportType === 'week' 
+                    ? `Week ${getWeek(currentDate, { weekStartsOn: 1 })}, ${format(currentDate, 'yyyy')}`
+                    : format(currentDate, 'MMMM yyyy')
+                  }
+                </span>
+                <span className="text-[9px] font-bold text-slate-400/80 tracking-normal normal-case">
+                  {format(dateRange.start, 'dd-MM-yyyy')} t/m {format(dateRange.end, 'dd-MM-yyyy')}
+                </span>
+              </div>
+              <button 
+                onClick={handleNext} 
+                className={cn(
+                  "p-2 rounded-xl transition-all",
+                  settings.theme === 'light' ? "hover:bg-white text-slate-400 hover:text-sky-500" : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                )}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -215,10 +304,15 @@ const Reports: React.FC = () => {
           "glass rounded-3xl p-8 border shadow-xl overflow-hidden group",
           settings.theme === 'light' ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
         )}>
-          <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">{settings.useCoreTasks ? 'Dagelijkse verhouding' : 'Dagelijkse uren'}</h3>
+          <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">
+            {reportType === 'week' 
+              ? (settings.useCoreTasks ? 'Wekelijkse verhouding' : 'Wekelijkse uren') 
+              : (settings.useCoreTasks ? 'Dagelijkse verhouding' : 'Dagelijkse uren')
+            }
+          </h3>
           <div className="h-80 w-full relative">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <BarChart data={dailyData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
                 <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
                 <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
@@ -239,9 +333,23 @@ const Reports: React.FC = () => {
                     wrapperStyle={{ paddingTop: '20px', fontSize: '10px', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '0.1em' }}
                   />
                 )}
-                <Bar dataKey="core" name={settings.useCoreTasks ? t.core : 'Uren'} stackId="a" fill="#38bdf8" radius={settings.useCoreTasks ? [0, 0, 0, 0] : [4, 4, 0, 0]} />
+                <Bar dataKey="core" name={settings.useCoreTasks ? t.core : 'Uren'} stackId="a" fill="#38bdf8" radius={settings.useCoreTasks ? [0, 0, 0, 0] : [4, 4, 0, 0]}>
+                  <LabelList 
+                    dataKey="core" 
+                    position={settings.useCoreTasks ? "inside" : "top"} 
+                    style={{ fill: settings.useCoreTasks ? '#01497c' : (settings.theme === 'light' ? '#334155' : '#cbd5e1'), fontSize: 9, fontWeight: 'black' }} 
+                    formatter={(val: number) => val > 0.2 ? `${val}h` : ''} 
+                  />
+                </Bar>
                 {settings.useCoreTasks && (
-                  <Bar dataKey="additional" name={t.additional} stackId="a" fill={settings.theme === 'light' ? '#cbd5e1' : '#334155'} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="additional" name={t.additional} stackId="a" fill={settings.theme === 'light' ? '#cbd5e1' : '#334155'} radius={[4, 4, 0, 0]}>
+                    <LabelList 
+                      dataKey="additional" 
+                      position="inside" 
+                      style={{ fill: settings.theme === 'light' ? '#475569' : '#ffffff', fontSize: 9, fontWeight: 'black' }} 
+                      formatter={(val: number) => val > 0.2 ? `${val}h` : ''} 
+                    />
+                  </Bar>
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -256,7 +364,7 @@ const Reports: React.FC = () => {
           <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">{t.hoursPerProject}</h3>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={projectData} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+              <BarChart layout="vertical" data={projectData} margin={{ top: 0, right: 40, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
                 <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
                 <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} width={80} tick={{fill: '#94a3b8', fontWeight: '600'}} />
@@ -273,6 +381,12 @@ const Reports: React.FC = () => {
                   {projectData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
+                  <LabelList 
+                    dataKey="value" 
+                    position="right" 
+                    style={{ fill: settings.theme === 'light' ? '#334155' : '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} 
+                    formatter={(val: number) => val > 0 ? `${val}h` : ''} 
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -287,7 +401,7 @@ const Reports: React.FC = () => {
           <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">{t.hoursPerClient}</h3>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={clientData} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+              <BarChart layout="vertical" data={clientData} margin={{ top: 0, right: 40, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
                 <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
                 <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} width={80} tick={{fill: '#94a3b8', fontWeight: '600'}} />
@@ -304,6 +418,12 @@ const Reports: React.FC = () => {
                   {clientData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
+                  <LabelList 
+                    dataKey="value" 
+                    position="right" 
+                    style={{ fill: settings.theme === 'light' ? '#334155' : '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} 
+                    formatter={(val: number) => val > 0 ? `${val}h` : ''} 
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -321,7 +441,7 @@ const Reports: React.FC = () => {
               <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">{t.hoursPerCoreTask}</h3>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={coreTaskData} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+                  <BarChart layout="vertical" data={coreTaskData} margin={{ top: 0, right: 40, left: 20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
                     <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
                     <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} width={80} tick={{fill: '#94a3b8', fontWeight: '600'}} />
@@ -333,7 +453,14 @@ const Reports: React.FC = () => {
                         fontSize: '12px' 
                       }} 
                     />
-                    <Bar dataKey="value" name="Uren" fill="#38bdf8" radius={[0, 4, 4, 0]} barSize={20} />
+                    <Bar dataKey="value" name="Uren" fill="#38bdf8" radius={[0, 4, 4, 0]} barSize={20}>
+                      <LabelList 
+                        dataKey="value" 
+                        position="right" 
+                        style={{ fill: settings.theme === 'light' ? '#334155' : '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} 
+                        formatter={(val: number) => val > 0 ? `${val}h` : ''} 
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -347,7 +474,7 @@ const Reports: React.FC = () => {
               <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">{t.hoursPerSubTask}</h3>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={subCoreTaskData} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+                  <BarChart layout="vertical" data={subCoreTaskData} margin={{ top: 0, right: 40, left: 20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
                     <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
                     <YAxis type="category" dataKey="name" fontSize={10} tickLine={false} axisLine={false} width={80} tick={{fill: '#94a3b8', fontWeight: '600'}} />
@@ -359,7 +486,14 @@ const Reports: React.FC = () => {
                         fontSize: '12px' 
                       }} 
                     />
-                    <Bar dataKey="value" name="Uren" fill="#c084fc" radius={[0, 4, 4, 0]} barSize={20} />
+                    <Bar dataKey="value" name="Uren" fill="#c084fc" radius={[0, 4, 4, 0]} barSize={20}>
+                      <LabelList 
+                        dataKey="value" 
+                        position="right" 
+                        style={{ fill: settings.theme === 'light' ? '#334155' : '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} 
+                        formatter={(val: number) => val > 0 ? `${val}h` : ''} 
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -380,7 +514,10 @@ const Reports: React.FC = () => {
                <div className="relative z-10">
                  <h3 className={cn("text-2xl font-black uppercase tracking-tighter italic", settings.theme === 'light' ? "text-slate-900" : "text-slate-950")}>Productiviteits-norm</h3>
                  <p className={cn("font-bold text-sm max-w-[280px] mt-2", settings.theme === 'light' ? "text-slate-600" : "text-slate-900 opacity-80")}>
-                   Je hebt deze maand {Math.round(corePercentage)}% aan kerntaken gewerkt. {corePercentage >= settings.coreNorm ? 'Goed bezig!' : 'Focus op je doelen.'}
+                   {settings.language === 'nl' 
+                     ? `Je hebt deze ${reportType === 'week' ? 'week' : 'maand'} ${Math.round(corePercentage)}% aan kerntaken gewerkt. ${corePercentage >= settings.coreNorm ? 'Goed bezig!' : 'Focus op je doelen.'}`
+                     : `You have worked ${Math.round(corePercentage)}% on core tasks this ${reportType === 'week' ? 'week' : 'month'}. ${corePercentage >= settings.coreNorm ? 'Great job!' : 'Focus on your goals.'}`
+                   }
                  </p>
                </div>
             </div>

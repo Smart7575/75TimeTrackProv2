@@ -88,7 +88,7 @@ const CoreTasks: React.FC = () => {
           </div>
           <div>
             <h2 className={cn("text-2xl font-black tracking-tight italic uppercase", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{t.coreTasks}</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Definieer je waardevolle werk</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">{t.defineValuableWork}</p>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@ const CoreTasks: React.FC = () => {
         <div className="relative z-10 flex gap-4">
           <input 
             type="text" 
-            placeholder="Nieuwe kerntaak toevoegen..."
+            placeholder={t.addCoreTaskPlaceholder}
             className={cn(
               "flex-1 border rounded-2xl p-4 focus:ring-1 focus:ring-sky-400 outline-none transition-all placeholder:text-slate-400 font-medium",
               settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950/50 border-slate-800 text-white"
@@ -167,7 +167,7 @@ const CoreTasks: React.FC = () => {
                             "text-[10px] font-black uppercase tracking-[0.2em] px-3 py-0.5 rounded-full border",
                             settings.theme === 'light' ? "text-slate-400 bg-slate-50 border-slate-100" : "text-slate-500 bg-slate-950 border-slate-800/50"
                           )}>
-                            {task.subTasks.length} SUB-TAKEN
+                            {task.subTasks.length} {t.subTasks}
                           </span>
                         </div>
                       </>
@@ -197,7 +197,7 @@ const CoreTasks: React.FC = () => {
                   <PlusCircle size={20} />
                 </button>
                 <button 
-                  onClick={() => { if(confirm('Kerntaak verwijderen?')) deleteCoreTask(task.id); }}
+                  onClick={() => { if(confirm(t.deleteCoreTaskConfirm)) deleteCoreTask(task.id); }}
                   className="p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl border border-red-500/20 transition-all"
                   title={t.delete}
                 >
@@ -226,7 +226,7 @@ const CoreTasks: React.FC = () => {
             )}>
               <input 
                 type="text" 
-                placeholder="Naam van de subtaak..."
+                placeholder={t.subTaskNamePlaceholder}
                 className={cn(
                   "flex-1 border rounded-2xl p-4 text-sm outline-none focus:ring-1 focus:ring-sky-400 transition-all",
                   settings.theme === 'light' ? "bg-white border-sky-100 text-slate-950" : "bg-slate-950/50 border-slate-800 text-white"
@@ -287,7 +287,7 @@ const CoreTasks: React.FC = () => {
                           <Edit2 size={14} />
                         </button>
                         <button 
-                          onClick={() => { if(confirm('Subtaak verwijderen?')) deleteSubCoreTask(task.id, sub.id); }}
+                          onClick={() => { if(confirm(t.deleteSubTaskConfirm)) deleteSubCoreTask(task.id, sub.id); }}
                           className={cn(
                             "p-2 rounded-lg transition-all",
                             settings.theme === 'light' ? "bg-white text-slate-400 hover:text-red-500 border border-slate-200" : "bg-slate-900 text-slate-700 hover:text-red-500"
@@ -300,7 +300,7 @@ const CoreTasks: React.FC = () => {
                     </div>
                   ))}
                   {task.subTasks.length === 0 && !showAddSubFor && (
-                    <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">Geen sub-taken gevonden.</div>
+                    <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">{t.noSubTasks}</div>
                   )}
                 </div>
               </div>
@@ -318,7 +318,7 @@ const CoreTasks: React.FC = () => {
             )}>
                <Layers size={40} className={settings.theme === 'light' ? "text-slate-950" : "text-white"} />
             </div>
-            <p className="text-slate-500 text-sm italic font-black uppercase tracking-[0.4em]">Geen kerntaken gedefinieerd</p>
+            <p className="text-slate-500 text-sm italic font-black uppercase tracking-[0.4em]">{t.noCoreTasksDefined}</p>
           </div>
         )}
       </div>

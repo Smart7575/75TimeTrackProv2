@@ -87,7 +87,7 @@ const Clients: React.FC = () => {
           )}>
             {t.clients}
           </h2>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em]">{clients.length} geregistreerde organisaties</p>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em]">{clients.length} {t.registeredOrganizations}</p>
         </div>
         <button 
           onClick={() => setIsAddClientOpen(true)}
@@ -102,7 +102,7 @@ const Clients: React.FC = () => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors" size={20} />
         <input 
           type="text" 
-          placeholder="Zoek opdrachtgever op naam of e-mail..."
+          placeholder={t.searchClientPlaceholder}
           className={cn(
             "w-full pl-12 pr-4 py-5 border rounded-2xl focus:ring-1 focus:ring-sky-500 outline-none transition-all placeholder:text-slate-400 font-medium",
             settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-900 border-slate-800 text-white"
@@ -139,7 +139,7 @@ const Clients: React.FC = () => {
                   <div>
                     <h3 className={cn("text-xl font-black uppercase italic tracking-tight", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{client.name}</h3>
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest flex items-center gap-2">
-                       <Hash size={12} /> {client.kvk || 'Geen KVK'}
+                       <Hash size={12} /> {client.kvk || t.noKvk}
                     </p>
                   </div>
                 </div>
@@ -219,7 +219,7 @@ const Clients: React.FC = () => {
                       "col-span-full py-4 text-center text-[10px] font-bold uppercase tracking-widest border border-dashed rounded-xl",
                       settings.theme === 'light' ? "text-slate-400 border-slate-200" : "text-slate-700 border-slate-800"
                     )}>
-                      Geen contactpersonen
+                      {t.noContactPersons}
                     </p>
                   )}
                 </div>
@@ -266,7 +266,7 @@ const Clients: React.FC = () => {
                         "w-full border rounded-2xl p-4 focus:ring-1 focus:ring-sky-400 outline-none transition-all placeholder:text-slate-400 font-medium text-sm",
                         settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950/50 border-slate-800 text-white"
                       )}
-                      placeholder="Bedrijfsnaam"
+                      placeholder={t.companyName}
                       value={newClient.name}
                       onChange={(e) => setNewClient({...newClient, name: e.target.value})}
                     />
@@ -453,7 +453,7 @@ const Clients: React.FC = () => {
               <div className="p-8 space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Naam contactpersoon</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.contactNamePlaceholder}</label>
                     <div className="relative group">
                       <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-sky-400 transition-colors" size={18} />
                       <input 
@@ -485,7 +485,7 @@ const Clients: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Telefoon</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.phone}</label>
                     <div className="relative group">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-sky-400 transition-colors" size={18} />
                       <input 
