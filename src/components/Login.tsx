@@ -32,6 +32,7 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
+      const codeSuffix = err.code ? ` (foutcode: ${err.code})` : '';
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Ongeldige e-mail of wachtwoord.');
       } else if (err.code === 'auth/email-already-in-use') {
@@ -39,7 +40,7 @@ const Login: React.FC = () => {
       } else if (err.code === 'auth/weak-password') {
         setError('Het wachtwoord is te zwak.');
       } else {
-        setError('Er is een fout opgetreden. Probeer het opnieuw.');
+        setError(`Er is een fout opgetreden. Probeer het opnieuw.${codeSuffix}`);
       }
     } finally {
       setLoading(false);
@@ -57,7 +58,8 @@ const Login: React.FC = () => {
       if (err.code === 'auth/popup-closed-by-user') {
         // Do nothing if user closed the popup
       } else {
-        setError('Google login is mislukt. Probeer het opnieuw.');
+        const codeSuffix = err.code ? ` (foutcode: ${err.code})` : '';
+        setError(`Google login is mislukt. Probeer het opnieuw.${codeSuffix}`);
       }
     } finally {
       setLoading(false);

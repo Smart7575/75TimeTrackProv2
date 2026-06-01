@@ -227,6 +227,29 @@ const Clients: React.FC = () => {
             </motion.div>
           ))}
         </AnimatePresence>
+        {filteredClients.length === 0 && (
+          <div className={cn(
+            "col-span-full py-32 glass rounded-[3rem] border text-center flex flex-col items-center gap-8 shadow-inner w-full",
+            settings.theme === 'light' ? "bg-white border-slate-100 shadow-slate-200/50" : "bg-slate-900/40 border-slate-800 shadow-black/50"
+          )}>
+            <div className={cn(
+              "w-24 h-24 rounded-full flex items-center justify-center border opacity-20 shadow-2xl",
+              settings.theme === 'light' ? "bg-slate-50 border-slate-200" : "bg-slate-900 border-slate-800"
+            )}>
+               <Users size={40} className={settings.theme === 'light' ? "text-slate-950" : "text-white"} />
+            </div>
+            <p className="text-slate-500 text-sm italic font-black uppercase tracking-[0.4em]">
+              {settings.language === 'nl' ? 'Geen opdrachtgevers gevonden' : 'No clients found'}
+            </p>
+            <button 
+              onClick={() => setIsAddClientOpen(true)}
+              className="flex items-center gap-2 px-6 py-4 bg-sky-500 text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-sky-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <PlusCircle size={18} strokeWidth={3} />
+              {t.addClient}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Add Client Dialog */}
