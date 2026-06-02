@@ -147,6 +147,7 @@ const Projects: React.FC = () => {
     projects, clients, entries, coreTasks, settings, 
     addProject, updateProject, deleteProject, archiveProject,
     addActivity, updateActivity, deleteActivity, archiveActivity,
+    addSubProject, updateSubProject, deleteSubProject,
     startTimer
   } = useApp();
   const t = translations[settings.language];
@@ -178,6 +179,12 @@ const Projects: React.FC = () => {
     name: string;
     classification: Classification;
     coreSubTaskId: string;
+  } | null>(null);
+
+  const [newSubProject, setNewSubProject] = useState<{
+    id?: string;
+    projectId: string;
+    name: string;
   } | null>(null);
 
   const filteredProjects = projects
@@ -238,6 +245,18 @@ const Projects: React.FC = () => {
     }
     
     setNewActivity(null);
+  };
+
+  const handleAddSubProject = () => {
+    if (!newSubProject || !newSubProject.name) return;
+    
+    if (newSubProject.id) {
+      updateSubProject(newSubProject.projectId, newSubProject.id, newSubProject.name);
+    } else {
+      addSubProject(newSubProject.projectId, newSubProject.name);
+    }
+    
+    setNewSubProject(null);
   };
 
   const executeDeleteAction = (action: 'delete' | 'archive', reassignToId?: string) => {
@@ -677,6 +696,100 @@ const Projects: React.FC = () => {
                   ))}
                   {(project.activities || []).filter(a => !a.archived).length === 0 && (!newActivity || newActivity.projectId !== project.id) && (
                     <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">Geen activiteiten gedefinieerd.</div>
+                  )}
+                </div>
+
+                {/* Subprojects Section */}
+                <div className={cn("h-px w-full my-10", settings.theme === 'light' ? "bg-slate-100" : "bg-slate-800/50")} />
+                
+                <div className="flex justify-between items-center mb-8">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">{t.subprojects}</h4>
+                  <button 
+                    onClick={() => {
+                      if (newSubProject) setNewSubProject(null);
+                      else setNewSubProject({ projectId: project.id, name: '' });
+                    }}
+                    className={cn(
+                      "text-[10px] font-black flex items-center gap-3 px-5 py-2 border rounded-xl uppercase tracking-widest transition-all shadow-lg",
+                      settings.theme === 'light' ? "bg-white border-slate-200 text-slate-900 hover:bg-slate-50 shadow-slate-200" : "bg-slate-900 border-slate-800 text-white hover:bg-slate-800"
+                    )}
+                  >
+                    <PlusCircle size={16} className="text-sky-400" />
+                    {t.addSubProject}
+                  </button>
+                </div>
+
+                {newSubProject?.projectId === project.id && (
+                  <div className={cn(
+                    "mb-8 p-8 rounded-[2rem] border space-y-6 animate-in fade-in zoom-in-95 duration-300",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100" : "bg-slate-950/80 border-slate-800"
+                  )}>
+                    <div className="space-y-2 max-w-md">
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">{t.subProjectName}</label>
+                      <input 
+                        type="text" 
+                        placeholder={t.subprojectNamePlaceholder}
+                        className={cn(
+                          "w-full border rounded-2xl p-4 text-sm outline-none focus:ring-1 focus:ring-sky-400 transition-all",
+                          settings.theme === 'light' ? "bg-white border-slate-200 text-slate-900" : "bg-slate-900/50 border-slate-800 text-white"
+                        )}
+                        value={newSubProject.name}
+                        onChange={(e) => setNewSubProject({...newSubProject, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-4">
+                       <button onClick={() => setNewSubProject(null)} className="px-6 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-sky-500 transition-colors">{t.cancel}</button>
+                       <button onClick={handleAddSubProject} className="px-8 py-3 bg-sky-500 text-slate-950 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-sky-500/20">{t.save}</button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(project.subProjects || [])
+                    .filter(sp => !sp.archived)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(subproj => (
+                    <div key={subproj.id} className={cn(
+                      "p-5 rounded-2xl border group/item shadow-sm transition-all flex flex-col gap-3",
+                      settings.theme === 'light' ? "bg-sky-50/30 border-sky-100 hover:border-sky-300" : "bg-slate-950/40 border-slate-800/50 hover:border-slate-600"
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <span className={cn("font-black text-xs uppercase tracking-tight italic", settings.theme === 'light' ? "text-slate-800" : "text-slate-200")}>{subproj.name}</span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => {
+                              setNewSubProject({
+                                id: subproj.id,
+                                projectId: project.id,
+                                name: subproj.name
+                              });
+                            }}
+                            className={cn(
+                              "p-2 transition-all rounded-lg border shadow-sm",
+                              settings.theme === 'light' ? "bg-white text-slate-400 hover:text-sky-500 border-slate-200" : "bg-slate-900 text-slate-700 hover:text-sky-400 border-slate-800"
+                            )}
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (confirm(settings.language === 'nl' ? 'Subproject verwijderen?' : 'Delete subproject?')) {
+                                deleteSubProject(project.id, subproj.id);
+                              }
+                            }}
+                            className={cn(
+                              "p-2 transition-all rounded-lg border shadow-sm",
+                              settings.theme === 'light' ? "bg-white text-slate-400 hover:text-red-500 border border-slate-200" : "bg-slate-900 text-slate-700 hover:text-red-500 border-slate-800"
+                            )}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(project.subProjects || []).filter(sp => !sp.archived).length === 0 && (!newSubProject || newSubProject.projectId !== project.id) && (
+                    <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">{t.noSubProjectsDefined}</div>
                   )}
                 </div>
               </div>

@@ -19,6 +19,12 @@ export interface ProjectActivity {
   archived?: boolean;
 }
 
+export interface SubProject {
+  id: string;
+  name: string;
+  archived?: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -28,6 +34,7 @@ export interface Project {
   budget: number; // in hours
   rate: number; // hourly rate
   activities: ProjectActivity[];
+  subProjects?: SubProject[];
   archived?: boolean;
 }
 
@@ -35,6 +42,7 @@ export interface TimeEntry {
   id: string;
   projectId: string;
   activityId: string;
+  subProjectId?: string;
   notes: string;
   startTime: Date;
   endTime?: Date;

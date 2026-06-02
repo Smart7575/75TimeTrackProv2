@@ -29,40 +29,48 @@ service cloud.firestore {
 
     // Project Validation
     function isValidProject(data) {
-      return data.keys().hasAll(['name', 'client', 'activities']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.client is string && data.client.size() > 0 && data.client.size() < 100 &&
-             data.activities is list && data.activities.size() <= 50;
+      return (!('name' in data) || data.name == null || (data.name is string && data.name.size() < 100)) &&
+             (!('client' in data) || data.client == null || (data.client is string && data.client.size() < 100)) &&
+             (!('clientId' in data) || data.clientId == null || data.clientId is string) &&
+             (!('color' in data) || data.color == null || data.color is string) &&
+             (!('budget' in data) || data.budget == null || data.budget is int || data.budget is float || data.budget is string) &&
+             (!('rate' in data) || data.rate == null || data.rate is int || data.rate is float || data.rate is string) &&
+             (!('activities' in data) || data.activities == null || data.activities is list) &&
+             (!('subProjects' in data) || data.subProjects == null || data.subProjects is list) &&
+             (!('archived' in data) || data.archived == null || data.archived is bool) &&
+             (!('id' in data) || data.id == null || data.id is string) &&
+             !('isAdmin' in data);
     }
 
     // Entry Validation
     function isValidEntry(data) {
-      return data.keys().hasAll(['projectId', 'activityId', 'startTime', 'durationInMinutes', 'classification']) &&
-             data.projectId is string && data.activityId is string &&
-             data.startTime is timestamp &&
-             data.durationInMinutes is number && data.durationInMinutes >= 0 &&
-             data.classification in ['core', 'additional', 'development', 'admin', 'absence'];
+      return (!('projectId' in data) || data.projectId is string) &&
+             (!('activityId' in data) || data.activityId is string) &&
+             (!('startTime' in data) || data.startTime is timestamp) &&
+             (!('durationInMinutes' in data) || data.durationInMinutes == null || data.durationInMinutes is int || data.durationInMinutes is float || data.durationInMinutes is string) &&
+             (!('classification' in data) || data.classification is string) &&
+             (!('subProjectId' in data) || data.subProjectId == null || data.subProjectId is string) &&
+             (!('notes' in data) || data.notes == null || data.notes is string);
     }
 
     // Task Validation
     function isValidTask(data) {
-      return data.keys().hasAll(['name', 'subTasks']) &&
-             data.name is string && data.name.size() > 0 &&
-             data.subTasks is list && data.subTasks.size() <= 50;
+      return (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             (!('subTasks' in data) || data.subTasks == null || data.subTasks is list);
     }
 
     // Settings Validation
     function isValidSettings(data) {
-      return data.keys().hasAll(['coreNorm', 'language', 'theme']) &&
-             data.coreNorm is number && data.coreNorm >= 0 &&
-             data.language is string && data.theme is string;
+      return (!('coreNorm' in data) || data.coreNorm == null || data.coreNorm is int || data.coreNorm is float || data.coreNorm is string) &&
+             (!('language' in data) || data.language is string) &&
+             (!('theme' in data) || data.theme is string);
     }
 
     // Client Validation
     function isValidClient(data) {
-      return data.keys().hasAll(['name', 'contactPersons']) &&
-             data.name is string && data.name.size() > 0 &&
-             data.contactPersons is list;
+      return (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             (!('contactPersons' in data) || data.contactPersons == null || data.contactPersons is list) &&
+             (!('archived' in data) || data.archived == null || data.archived is bool);
     }
 
     match /users/{userId} {
@@ -71,22 +79,28 @@ service cloud.firestore {
 
       match /projects/{projectId} {
         allow read, list: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming());
-        allow update: if isOwner(userId) && isValidProject(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'client', 'color', 'budget', 'rate', 'activities', 'archived']);
+        allow create: if isOwner(userId) && isValidId(projectId) && 
+                         incoming().keys().hasAll(['name', 'client']) &&
+                         incoming().name is string && incoming().name.size() > 0 &&
+                         incoming().client is string && incoming().client.size() > 0 &&
+                         isValidProject(incoming());
+        allow update: if isOwner(userId) && 
+                         isValidProject(incoming()) && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['id', 'name', 'client', 'clientId', 'color', 'budget', 'rate', 'activities', 'subProjects', 'archived']);
         allow delete: if isOwner(userId);
       }
 
       match /clients/{clientId} {
         allow read, list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(clientId) && isValidClient(incoming());
-        allow update: if isOwner(userId) && isValidClient(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'postcode', 'street', 'houseNumber', 'city', 'state', 'country', 'phone', 'email', 'kvk', 'contactPersons', 'archived']);
+        allow update: if isOwner(userId) && isValidClient(incoming());
         allow delete: if isOwner(userId);
       }
 
       match /entries/{entryId} {
         allow read, list: if isOwner(userId);
         allow create: if isOwner(userId) && isValidId(entryId) && isValidEntry(incoming());
-        allow update: if isOwner(userId) && isValidEntry(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['projectId', 'activityId', 'startTime', 'endTime', 'notes', 'durationInMinutes', 'classification']);
+        allow update: if isOwner(userId) && isValidEntry(incoming());
         allow delete: if isOwner(userId);
       }
 

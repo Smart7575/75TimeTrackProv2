@@ -45,6 +45,7 @@ const TimeRegister: React.FC = () => {
   const [editFormData, setEditFormData] = useState({
     projectId: '',
     activityId: '',
+    subProjectId: '',
     startTime: '',
     endTime: '',
     notes: '',
@@ -93,6 +94,7 @@ const TimeRegister: React.FC = () => {
     setEditFormData({
       projectId: entry.projectId,
       activityId: entry.activityId,
+      subProjectId: entry.subProjectId || '',
       startTime: entry.startTime ? format(entry.startTime, 'HH:mm') : '09:00',
       endTime: entry.endTime ? format(entry.endTime, 'HH:mm') : '',
       notes: entry.notes,
@@ -127,6 +129,7 @@ const TimeRegister: React.FC = () => {
     updateEntry(editingEntry.id, {
       projectId: editFormData.projectId,
       activityId: editFormData.activityId,
+      subProjectId: editFormData.subProjectId || '',
       startTime: newStartTime,
       endTime: newEndTime || undefined,
       durationInMinutes: durationInMinutes > 0 ? durationInMinutes : editingEntry.durationInMinutes,
@@ -312,6 +315,13 @@ const TimeRegister: React.FC = () => {
                         )}>
                           {activity?.name || 'Verwijderde Activiteit'}
                         </span>
+                        {entry.subProjectId && (
+                          <span className={cn(
+                            "text-[10px] px-2 py-0.5 border rounded uppercase font-extrabold tracking-widest bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          )}>
+                            {(project?.subProjects || []).find(sp => sp.id === entry.subProjectId)?.name || 'Subproject'}
+                          </span>
+                        )}
                         {settings.useCoreTasks && (
                           <span className={cn(
                             "text-[10px] px-2 py-0.5 rounded border uppercase font-black tracking-widest transition-colors",
@@ -406,7 +416,12 @@ const TimeRegister: React.FC = () => {
                   value={editFormData.projectId}
                     onChange={(e) => {
                       const project = projects.find(p => p.id === e.target.value);
-                      setEditFormData({...editFormData, projectId: e.target.value, activityId: (project?.activities || [])[0]?.id || ''});
+                      setEditFormData({
+                        ...editFormData, 
+                        projectId: e.target.value, 
+                        activityId: (project?.activities || [])[0]?.id || '',
+                        subProjectId: ''
+                      });
                     }}
                   className={cn(
                     "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
@@ -429,6 +444,23 @@ const TimeRegister: React.FC = () => {
                 >
                   {(projects.find(p => p.id === editFormData.projectId)?.activities || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                     <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.subproject}</label>
+                <select 
+                  value={editFormData.subProjectId || ''}
+                  onChange={(e) => setEditFormData({...editFormData, subProjectId: e.target.value})}
+                  className={cn(
+                    "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                  )}
+                >
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Geen subproject</option>
+                  {(projects.find(p => p.id === editFormData.projectId)?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => (
+                    <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>
                   ))}
                 </select>
               </div>

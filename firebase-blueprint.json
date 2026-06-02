@@ -16,6 +16,10 @@
         "activities": {
           "type": "array",
           "items": { "type": "object" }
+        },
+        "subProjects": {
+          "type": "array",
+          "items": { "type": "object" }
         }
       },
       "required": ["name", "client"]
@@ -42,6 +46,7 @@
         "id": { "type": "string" },
         "projectId": { "type": "string" },
         "activityId": { "type": "string" },
+        "subProjectId": { "type": "string" },
         "notes": { "type": "string" },
         "startTime": { "type": "string", "format": "date-time" },
         "endTime": { "type": "string", "format": "date-time" },

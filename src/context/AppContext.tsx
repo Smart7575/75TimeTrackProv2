@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Project, TimeEntry, CoreTask, Settings, TabType, 
   Language, Theme, Classification, Client, ContactPerson,
-  ProjectActivity
+  ProjectActivity, SubProject
 } from '../types';
 import { auth, db } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -69,6 +69,7 @@ interface AppState {
     startTime: Date;
     projectId: string;
     activityId: string;
+    subProjectId?: string;
     notes: string;
   } | null;
   isInitialLoading: boolean;
@@ -94,6 +95,10 @@ interface AppContextType extends AppState {
   deleteActivity: (projectId: string, activityId: string, reassignToId?: string) => void;
   archiveActivity: (projectId: string, activityId: string) => void;
 
+  addSubProject: (projectId: string, name: string) => void;
+  updateSubProject: (projectId: string, subProjectId: string, name: string) => void;
+  deleteSubProject: (projectId: string, subProjectId: string) => void;
+
   addEntry: (entry: Omit<TimeEntry, 'id'>) => void;
   updateEntry: (id: string, entry: Partial<TimeEntry>) => void;
   deleteEntry: (id: string) => void;
@@ -109,7 +114,7 @@ interface AppContextType extends AppState {
   setSettings: (settings: Partial<Settings>) => void;
   setActiveTab: (tab: TabType) => void;
   
-  startTimer: (projectId: string, activityId: string, notes: string) => void;
+  startTimer: (projectId: string, activityId: string, notes: string, subProjectId?: string) => void;
   stopTimer: () => void;
   cancelTimer: () => void;
 }
@@ -206,6 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...data, 
           id: doc.id,
           activities: data.activities || [],
+          subProjects: data.subProjects || [],
           archived: data.archived || false
         } as Project;
       });
@@ -308,6 +314,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await addDoc(collection(db, path), sanitizeForFirestore({
         ...projectData,
         activities: [],
+        subProjects: [],
         archived: false
       }));
     } catch (err) {
@@ -473,6 +480,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await updateActivity(projectId, activityId, { archived: true });
   };
 
+  const addSubProject = async (projectId: string, name: string) => {
+    if (!user) return;
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return;
+    const path = `users/${user.uid}/projects/${projectId}`;
+    try {
+      const newSubProject = sanitizeForFirestore({ id: generateId(), name, archived: false });
+      await updateDoc(doc(db, path), {
+        subProjects: [...(project.subProjects || []), newSubProject]
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, path);
+    }
+  };
+
+  const updateSubProject = async (projectId: string, subProjectId: string, name: string) => {
+    if (!user) return;
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return;
+    const path = `users/${user.uid}/projects/${projectId}`;
+    try {
+      await updateDoc(doc(db, path), {
+        subProjects: (project.subProjects || []).map(sp => sp.id === subProjectId ? sanitizeForFirestore({ ...sp, name }) : sp)
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, path);
+    }
+  };
+
+  const deleteSubProject = async (projectId: string, subProjectId: string) => {
+    if (!user) return;
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return;
+    const path = `users/${user.uid}/projects/${projectId}`;
+    const entriesPath = `users/${user.uid}/entries`;
+    try {
+      const affectedEntries = state.entries.filter(e => e.projectId === projectId && e.subProjectId === subProjectId);
+      for (const entry of affectedEntries) {
+        await updateDoc(doc(db, `${entriesPath}/${entry.id}`), { subProjectId: "" });
+      }
+      await updateDoc(doc(db, path), {
+        subProjects: (project.subProjects || []).filter(sp => sp.id !== subProjectId).map(sp => sanitizeForFirestore(sp))
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, path);
+    }
+  };
+
   const addEntry = async (entryData: Omit<TimeEntry, 'id'>) => {
     if (!user) return;
     const path = `users/${user.uid}/entries`;
@@ -589,13 +644,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setActiveTab = (activeTab: TabType) => setState(s => ({ ...s, activeTab }));
 
-  const startTimer = (projectId: string, activityId: string, notes: string) => {
+  const startTimer = (projectId: string, activityId: string, notes: string, subProjectId?: string) => {
     setState(s => ({
       ...s,
       activeTimer: {
         startTime: new Date(),
         projectId,
         activityId,
+        subProjectId,
         notes
       }
     }));
@@ -610,6 +666,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addEntry({
       projectId: state.activeTimer.projectId,
       activityId: state.activeTimer.activityId,
+      subProjectId: state.activeTimer.subProjectId || undefined,
       notes: state.activeTimer.notes,
       startTime: state.activeTimer.startTime,
       endTime,
@@ -670,6 +727,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateActivity,
       deleteActivity,
       archiveActivity,
+      addSubProject,
+      updateSubProject,
+      deleteSubProject,
       addEntry,
       updateEntry,
       deleteEntry,

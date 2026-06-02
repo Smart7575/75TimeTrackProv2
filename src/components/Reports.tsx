@@ -38,6 +38,7 @@ const Reports: React.FC = () => {
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [reportType, setReportType] = useState<'week' | 'month'>('month');
+  const [selectedMainProject, setSelectedMainProject] = useState<string>('all');
 
   const dateRange = useMemo(() => {
     if (reportType === 'week') {
@@ -120,6 +121,40 @@ const Reports: React.FC = () => {
       color: data.color
     })).sort((a, b) => b.value - a.value);
   }, [filteredEntries, projects, clients]);
+
+  // Chart data: Hours per subproject per main project
+  const subProjectData = useMemo(() => {
+    const data: { name: string; displayLabel: string; value: number; color: string; projectName: string }[] = [];
+    
+    projects.forEach(project => {
+      if (selectedMainProject !== 'all' && project.id !== selectedMainProject) {
+        return;
+      }
+      
+      const subs = project.subProjects || [];
+      subs.forEach(sub => {
+        const hours = filteredEntries
+          .filter(e => e.projectId === project.id && e.subProjectId === sub.id)
+          .reduce((acc, curr) => acc + (Number(curr.durationInMinutes) || 0), 0) / 60;
+        
+        if (hours > 0) {
+          data.push({
+            name: sub.name,
+            projectName: project.name,
+            displayLabel: selectedMainProject === 'all' ? `${sub.name} (${project.name})` : sub.name,
+            value: parseFloat(hours.toFixed(1)),
+            color: project.color || '#10b981'
+          });
+        }
+      });
+    });
+    
+    return data.sort((a, b) => b.value - a.value);
+  }, [filteredEntries, projects, selectedMainProject]);
+
+  const projectsWithSubprojects = useMemo(() => {
+    return projects.filter(p => p.subProjects && p.subProjects.length > 0);
+  }, [projects]);
 
   // Chart data: Hours per core task
   const coreTaskData = coreTasks.map(task => {
@@ -427,6 +462,79 @@ const Reports: React.FC = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Subproject Chart */}
+        <div className={cn(
+          "glass rounded-3xl p-8 border shadow-xl group",
+          settings.theme === 'light' ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
+        )}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">{t.hoursPerSubProject}</h3>
+            
+            {projectsWithSubprojects.length > 0 && (
+              <select
+                value={selectedMainProject}
+                onChange={(e) => setSelectedMainProject(e.target.value)}
+                className={cn(
+                  "text-xs font-semibold px-3 py-1.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all",
+                  settings.theme === 'light' 
+                    ? "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100" 
+                    : "bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-900"
+                )}
+              >
+                <option value="all">
+                  {settings.language === 'nl' ? 'Alle projecten' : 'All projects'}
+                </option>
+                {projectsWithSubprojects.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          
+          <div className="h-80 w-full flex items-center justify-center">
+            {subProjectData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={subProjectData} margin={{ top: 0, right: 40, left: 20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={settings.theme === 'light' ? '#e2e8f0' : '#1e293b'} />
+                  <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{fill: '#64748b'}} />
+                  <YAxis type="category" dataKey="displayLabel" fontSize={10} tickLine={false} axisLine={false} width={120} tick={{fill: '#94a3b8', fontWeight: '600'}} />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(56,189,248,0.05)' }}
+                    contentStyle={{ 
+                      backgroundColor: settings.theme === 'light' ? '#ffffff' : '#0f172a', 
+                      border: settings.theme === 'light' ? '1px solid #e2e8f0' : '1px solid #1e293b', 
+                      borderRadius: '16px', 
+                      fontSize: '12px',
+                      color: settings.theme === 'light' ? '#0f172a' : '#ffffff'
+                    }} 
+                   />
+                  <Bar dataKey="value" name="Uren" radius={[0, 4, 4, 0]} barSize={20}>
+                    {subProjectData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <LabelList 
+                      dataKey="value" 
+                      position="right" 
+                      style={{ fill: settings.theme === 'light' ? '#334155' : '#cbd5e1', fontSize: 10, fontWeight: 'bold' }} 
+                      formatter={(val: number) => val > 0 ? `${val}h` : ''} 
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-sm font-medium text-slate-400">
+                  {settings.language === 'nl' 
+                    ? 'Geen uren geregistreerd voor subprojecten in deze periode.' 
+                    : 'No hours recorded for subprojects in this period.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

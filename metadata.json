@@ -2,5 +2,5 @@
   "name": "75TimeTrackPro",
   "description": "A high-performance time registration application with project management, core task tracking, and visual analytics.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

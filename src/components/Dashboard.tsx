@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
   
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedActivity, setSelectedActivity] = useState('');
+  const [selectedSubProject, setSelectedSubProject] = useState('');
   const [notes, setNotes] = useState('');
   const [isManual, setIsManual] = useState(false);
   const [manualData, setManualData] = useState({
@@ -38,6 +39,7 @@ const Dashboard: React.FC = () => {
   const [editFormData, setEditFormData] = useState({
     projectId: '',
     activityId: '',
+    subProjectId: '',
     startTime: '09:00',
     endTime: '',
     notes: '',
@@ -89,8 +91,9 @@ const Dashboard: React.FC = () => {
 
   const handleStartTimer = () => {
     if (selectedProject && selectedActivity) {
-      startTimer(selectedProject, selectedActivity, notes);
+      startTimer(selectedProject, selectedActivity, notes, selectedSubProject || undefined);
       setNotes('');
+      setSelectedSubProject('');
     }
   };
 
@@ -123,6 +126,7 @@ const Dashboard: React.FC = () => {
         await addEntry({
           projectId: selectedProject,
           activityId: selectedActivity,
+          subProjectId: selectedSubProject || undefined,
           notes: notes || '',
           startTime: start,
           endTime: end,
@@ -131,6 +135,7 @@ const Dashboard: React.FC = () => {
         });
         
         setNotes('');
+        setSelectedSubProject('');
         setIsManual(false);
       } catch (err: any) {
         console.error("Error creating manual entry:", err);
@@ -146,6 +151,7 @@ const Dashboard: React.FC = () => {
     setEditFormData({
       projectId: entry.projectId,
       activityId: entry.activityId,
+      subProjectId: entry.subProjectId || '',
       startTime: entry.startTime ? format(entry.startTime, 'HH:mm') : '09:00',
       endTime: entry.endTime ? format(entry.endTime, 'HH:mm') : '',
       notes: entry.notes || '',
@@ -179,6 +185,7 @@ const Dashboard: React.FC = () => {
     updateEntry(editingEntry.id, {
       projectId: editFormData.projectId,
       activityId: editFormData.activityId,
+      subProjectId: editFormData.subProjectId || '',
       startTime: newStartTime,
       endTime: newEndTime || undefined,
       durationInMinutes: durationInMinutes > 0 ? durationInMinutes : editingEntry.durationInMinutes,
@@ -233,6 +240,11 @@ const Dashboard: React.FC = () => {
               <span className="text-xs text-slate-500 uppercase tracking-widest font-black mt-1">
                 {(projects.find(p => p.id === activeTimer.projectId)?.activities || []).find(a => a.id === activeTimer.activityId)?.name}
               </span>
+              {activeTimer.subProjectId && (
+                <span className="text-xs text-emerald-400 mt-1 uppercase tracking-widest font-bold">
+                  {(projects.find(p => p.id === activeTimer.projectId)?.subProjects || []).find(sp => sp.id === activeTimer.subProjectId)?.name}
+                </span>
+              )}
             </div>
             <button 
               onClick={stopTimer}
@@ -243,7 +255,7 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">{t.project}</label>
                 <select 
@@ -255,6 +267,7 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => {
                     setSelectedProject(e.target.value);
                     setSelectedActivity('');
+                    setSelectedSubProject('');
                   }}
                 >
                   <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Project selecteren</option>
@@ -274,6 +287,21 @@ const Dashboard: React.FC = () => {
                 >
                   <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Activiteit selecteren</option>
                   {(selectedProjectObj?.activities || []).filter(a => !a.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">{t.subproject}</label>
+                <select 
+                  className={cn(
+                    "w-full border rounded-xl p-4 text-sm focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950/50 border-slate-800 text-white"
+                  )}
+                  value={selectedSubProject}
+                  onChange={(e) => setSelectedSubProject(e.target.value)}
+                  disabled={!selectedProject}
+                >
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Subproject selecteren (optioneel)</option>
+                  {(selectedProjectObj?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>)}
                 </select>
               </div>
             </div>
@@ -503,6 +531,13 @@ const Dashboard: React.FC = () => {
                        )}>
                          {activity?.name}
                        </span>
+                       {entry.subProjectId && (
+                         <span className={cn(
+                            "text-xs px-2 py-1 rounded-md border font-extrabold uppercase transition-colors ml-2 bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                         )}>
+                           {(project?.subProjects || []).find(sp => sp.id === entry.subProjectId)?.name || 'Subproject'}
+                         </span>
+                       )}
                     </td>
                     <td className="py-5 text-xs text-slate-500 font-medium">
                       {entry.startTime ? format(entry.startTime, 'dd MMM') : '-'}
@@ -573,7 +608,12 @@ const Dashboard: React.FC = () => {
                   value={editFormData.projectId}
                   onChange={(e) => {
                     const project = projects.find(p => p.id === e.target.value);
-                    setEditFormData({...editFormData, projectId: e.target.value, activityId: (project?.activities || [])[0]?.id || ''});
+                    setEditFormData({
+                      ...editFormData, 
+                      projectId: e.target.value, 
+                      activityId: (project?.activities || [])[0]?.id || '',
+                      subProjectId: ''
+                    });
                   }}
                   className={cn(
                     "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
@@ -596,6 +636,23 @@ const Dashboard: React.FC = () => {
                 >
                   {(projects.find(p => p.id === editFormData.projectId)?.activities || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                     <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.subproject}</label>
+                <select 
+                  value={editFormData.subProjectId || ''}
+                  onChange={(e) => setEditFormData({...editFormData, subProjectId: e.target.value})}
+                  className={cn(
+                    "w-full px-5 py-4 border rounded-2xl focus:ring-1 focus:ring-sky-400 outline-none transition-all appearance-none text-sm font-bold",
+                    settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
+                  )}
+                >
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Geen subproject</option>
+                  {(projects.find(p => p.id === editFormData.projectId)?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => (
+                    <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>
                   ))}
                 </select>
               </div>
