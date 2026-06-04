@@ -341,8 +341,8 @@ const Reports: React.FC = () => {
         )}>
           <h3 className="text-[10px] font-black uppercase text-slate-500 mb-8 tracking-[0.3em]">
             {reportType === 'week' 
-              ? (settings.useCoreTasks ? 'Wekelijkse verhouding' : 'Wekelijkse uren') 
-              : (settings.useCoreTasks ? 'Dagelijkse verhouding' : 'Dagelijkse uren')
+              ? (settings.useCoreTasks ? t.weeklyRatio : t.weeklyHours) 
+              : (settings.useCoreTasks ? t.dailyRatio : t.dailyHours)
             }
           </h3>
           <div className="h-80 w-full relative">

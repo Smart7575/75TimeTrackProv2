@@ -270,7 +270,7 @@ const Dashboard: React.FC = () => {
                     setSelectedSubProject('');
                   }}
                 >
-                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Project selecteren</option>
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.selectProject}</option>
                   {projects.filter(p => !p.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{p.name}</option>)}
                 </select>
               </div>
@@ -285,7 +285,7 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setSelectedActivity(e.target.value)}
                   disabled={!selectedProject}
                 >
-                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Activiteit selecteren</option>
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.selectActivity}</option>
                   {(selectedProjectObj?.activities || []).filter(a => !a.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{a.name}</option>)}
                 </select>
               </div>
@@ -300,7 +300,7 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setSelectedSubProject(e.target.value)}
                   disabled={!selectedProject}
                 >
-                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Subproject selecteren (optioneel)</option>
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.selectSubProjectOptional}</option>
                   {(selectedProjectObj?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>)}
                 </select>
               </div>
@@ -321,7 +321,7 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">Start</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">{t.start}</label>
                   <input 
                     type="time"
                     className={cn(
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">Eind</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">{t.end}</label>
                   <input 
                     type="time"
                     className={cn(
@@ -354,7 +354,7 @@ const Dashboard: React.FC = () => {
                   "w-full border rounded-xl p-4 text-sm min-h-[120px] focus:ring-1 focus:ring-sky-400 outline-none transition-all resize-none",
                   settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900 placeholder:text-slate-400" : "bg-slate-950/50 border-slate-800 text-white placeholder:text-slate-600"
                 )}
-                placeholder="Details over je werkzaamheden..."
+                placeholder={t.detailsPlaceholder}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -418,7 +418,7 @@ const Dashboard: React.FC = () => {
              <div className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded border border-emerald-500/20">
                {(totalMinutesToday / 60).toFixed(1)}h total
              </div>
-             <span className="text-[10px] text-slate-500">vandaag</span>
+             <span className="text-[10px] text-slate-500">{t.today.toLowerCase()}</span>
           </div>
         </div>
 
@@ -563,7 +563,7 @@ const Dashboard: React.FC = () => {
                           <Edit2 size={14} />
                         </button>
                         <button 
-                          onClick={() => { if(confirm(settings.language === 'nl' ? 'Verwijderen?' : 'Delete?')) deleteEntry(entry.id); }}
+                          onClick={() => { if(confirm(t.deleteEntryConfirm)) deleteEntry(entry.id); }}
                           className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl border border-red-500/20 transition-colors"
                           title={t.delete}
                         >
@@ -650,7 +650,7 @@ const Dashboard: React.FC = () => {
                     settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
                   )}
                 >
-                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Geen subproject</option>
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.noSubProjectSelect}</option>
                   {(projects.find(p => p.id === editFormData.projectId)?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => (
                     <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>
                   ))}
@@ -672,7 +672,7 @@ const Dashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Begin</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.start}</label>
                   <input 
                     type="time"
                     value={editFormData.startTime}
@@ -684,7 +684,7 @@ const Dashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Einde</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.end}</label>
                   <input 
                     type="time"
                     value={editFormData.endTime}

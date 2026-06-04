@@ -61,7 +61,7 @@ const AppContent: React.FC = () => {
              "mt-1",
              settings.theme === 'light' ? 'text-slate-500' : 'text-slate-400'
            )}>
-             Het is vandaag {new Intl.DateTimeFormat(settings.language === 'nl' ? 'nl-NL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
+             {t.todayIs} {new Intl.DateTimeFormat(settings.language === 'nl' ? 'nl-NL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
            </p>
         </header>
         <AnimatePresence mode="wait">

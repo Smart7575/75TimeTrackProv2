@@ -309,7 +309,7 @@ const Projects: React.FC = () => {
           </div>
           <div>
             <h2 className={cn("text-2xl font-black tracking-tight italic uppercase", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{t.projects}</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Beheer je portfolio</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">{t.managePortfolio}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -321,10 +321,10 @@ const Projects: React.FC = () => {
                 ? "bg-white border-slate-200 text-slate-500 hover:text-sky-500" 
                 : "bg-slate-900 border-slate-800 text-slate-400 hover:text-sky-400"
             )}
-            title={expandedProjects.length === filteredProjects.length ? "Alles inklappen" : "Alles uitklappen"}
+            title={expandedProjects.length === filteredProjects.length ? t.collapseAll : t.expandAll}
           >
             {expandedProjects.length === filteredProjects.length ? <ChevronsDownUp size={16} /> : <ChevronsUpDown size={16} />}
-            <span className="hidden sm:inline">{expandedProjects.length === filteredProjects.length ? "Alles inklappen" : "Alles uitklappen"}</span>
+            <span className="hidden sm:inline">{expandedProjects.length === filteredProjects.length ? t.collapseAll : t.expandAll}</span>
           </button>
           <button 
             onClick={() => {
@@ -807,7 +807,7 @@ const Projects: React.FC = () => {
             )}>
                <Briefcase size={40} className={settings.theme === 'light' ? "text-slate-900" : "text-white"} />
             </div>
-            <p className="text-slate-500 text-sm italic font-black uppercase tracking-[0.4em]">Geen projecten gevonden</p>
+            <p className="text-slate-500 text-sm italic font-black uppercase tracking-[0.4em]">{t.noProjectsFound}</p>
           </div>
         )}
       </div>

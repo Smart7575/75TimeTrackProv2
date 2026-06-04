@@ -277,7 +277,7 @@ const TimeRegister: React.FC = () => {
                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t.time}</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t.duration}</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{t.notes}</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right">Acties</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right">{t.actions}</th>
               </tr>
             </thead>
             <tbody className={cn("divide-y", settings.theme === 'light' ? "divide-slate-100" : "divide-slate-800/30")}>
@@ -364,7 +364,7 @@ const TimeRegister: React.FC = () => {
                           <Edit2 size={16} />
                         </button>
                         <button 
-                          onClick={() => { if(confirm('Verwijderen?')) deleteEntry(entry.id); }}
+                          onClick={() => { if(confirm(t.deleteEntryConfirm)) deleteEntry(entry.id); }}
                           className="p-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl border border-red-500/20 transition-colors"
                           title={t.delete}
                         >
@@ -382,7 +382,7 @@ const TimeRegister: React.FC = () => {
                        <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:scale-110 transition-transform duration-500">
                          <History size={40} strokeWidth={1} />
                        </div>
-                       <p className="text-sm uppercase tracking-[0.3em] font-black italic">{t.noActivities || 'Geen resultaten'}</p>
+                       <p className="text-sm uppercase tracking-[0.3em] font-black italic">{t.noResults}</p>
                     </div>
                   </td>
                 </tr>
@@ -400,7 +400,7 @@ const TimeRegister: React.FC = () => {
             settings.theme === 'light' ? "bg-white border-slate-200" : "bg-slate-900 border-slate-800"
           )}>
             <div className="flex items-center justify-between">
-              <h2 className={cn("text-2xl font-black uppercase tracking-tight italic", settings.theme === 'light' ? "text-slate-900" : "text-white")}>Tijdregistratie Bewerken</h2>
+              <h2 className={cn("text-2xl font-black uppercase tracking-tight italic", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{t.editTimeEntry}</h2>
               <button 
                 onClick={() => setEditingEntry(null)} 
                 className="p-2 hover:bg-slate-800 rounded-xl transition-colors text-slate-500"
@@ -458,7 +458,7 @@ const TimeRegister: React.FC = () => {
                     settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950 border-slate-800 text-white"
                   )}
                 >
-                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Geen subproject</option>
+                  <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.noSubProjectSelect}</option>
                   {(projects.find(p => p.id === editFormData.projectId)?.subProjects || []).filter(sp => !sp.archived).slice().sort((a, b) => a.name.localeCompare(b.name)).map(sp => (
                     <option key={sp.id} value={sp.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{sp.name}</option>
                   ))}
@@ -480,7 +480,7 @@ const TimeRegister: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Begin</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.start}</label>
                   <input 
                     type="time"
                     value={editFormData.startTime}
@@ -492,7 +492,7 @@ const TimeRegister: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Einde</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.end}</label>
                   <input 
                     type="time"
                     value={editFormData.endTime}

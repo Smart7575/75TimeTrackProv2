@@ -231,7 +231,7 @@ const Settings: React.FC = () => {
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
            <div className="relative z-10">
               <h3 className="text-2xl font-black text-slate-950 uppercase italic tracking-tighter mb-2 underline decoration-slate-950/20 underline-offset-8">75TimeTrackPro v1.0</h3>
-              <p className="text-slate-900 font-bold text-sm max-w-sm opacity-80 leading-relaxed italic">Jouw data wordt volledig lokaal opgeslagen in deze browser-omgeving. Je privacy is onze prioriteit.</p>
+              <p className="text-slate-900 font-bold text-sm max-w-sm opacity-80 leading-relaxed italic">{t.localDataStorageInfo}</p>
            </div>
            <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-white/20 rounded-full blur-3xl pointer-events-none" />
            <div className="absolute right-12 top-4 w-28 h-28 bg-white opacity-10 rounded-[2rem] rotate-12 pointer-events-none border border-white/20" />
