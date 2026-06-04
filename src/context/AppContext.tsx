@@ -288,12 +288,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       handleFirestoreError(err, OperationType.GET, settingsPath);
     });
 
+    const activeTimerPath = `users/${userId}/settings/activeTimer`;
+    const unsubActiveTimer = onSnapshot(doc(db, activeTimerPath), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        let startTime: Date | undefined;
+        if (data.startTime) {
+          if (typeof data.startTime.toDate === 'function') {
+            startTime = data.startTime.toDate();
+          } else {
+            startTime = new Date(data.startTime);
+          }
+        }
+        if (startTime && !isNaN(startTime.getTime())) {
+          setState(s => ({
+            ...s,
+            activeTimer: {
+              startTime,
+              projectId: data.projectId || '',
+              activityId: data.activityId || '',
+              subProjectId: data.subProjectId || undefined,
+              notes: data.notes || '',
+            }
+          }));
+        } else {
+          setState(s => ({ ...s, activeTimer: null }));
+        }
+      } else {
+        setState(s => ({ ...s, activeTimer: null }));
+      }
+    }, (err) => {
+      console.error("Error loading active timer:", err);
+    });
+
     return () => {
       unsubProjects();
       unsubClients();
       unsubEntries();
       unsubTasks();
       unsubSettings();
+      unsubActiveTimer();
     };
   }, [user]);
 
@@ -644,26 +678,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setActiveTab = (activeTab: TabType) => setState(s => ({ ...s, activeTab }));
 
-  const startTimer = (projectId: string, activityId: string, notes: string, subProjectId?: string) => {
-    setState(s => ({
-      ...s,
-      activeTimer: {
+  const startTimer = async (projectId: string, activityId: string, notes: string, subProjectId?: string) => {
+    if (!user) return;
+    const path = `users/${user.uid}/settings/activeTimer`;
+    try {
+      const activeTimerData = {
         startTime: new Date(),
         projectId,
         activityId,
-        subProjectId,
-        notes
-      }
-    }));
+        subProjectId: subProjectId || null,
+        notes: notes || ""
+      };
+      await setDoc(doc(db, path), sanitizeForFirestore(activeTimerData));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, path);
+    }
   };
 
-  const stopTimer = () => {
-    if (!state.activeTimer) return;
+  const stopTimer = async () => {
+    if (!state.activeTimer || !user) return;
     const endTime = new Date();
     const durationInMinutes = Math.round((endTime.getTime() - state.activeTimer.startTime.getTime()) / 60000);
     const project = state.projects.find(p => p.id === state.activeTimer?.projectId);
     const activity = project?.activities.find(a => a.id === state.activeTimer?.activityId);
-    addEntry({
+    
+    await addEntry({
       projectId: state.activeTimer.projectId,
       activityId: state.activeTimer.activityId,
       subProjectId: state.activeTimer.subProjectId || undefined,
@@ -673,10 +712,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       classification: activity?.classification || 'core',
       durationInMinutes
     });
-    setState(s => ({ ...s, activeTimer: null }));
+
+    const path = `users/${user.uid}/settings/activeTimer`;
+    try {
+      await deleteDoc(doc(db, path));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
   };
 
-  const cancelTimer = () => setState(s => ({ ...s, activeTimer: null }));
+  const cancelTimer = async () => {
+    if (!user) return;
+    const path = `users/${user.uid}/settings/activeTimer`;
+    try {
+      await deleteDoc(doc(db, path));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  };
 
   if (state.error) {
     return (

@@ -88,6 +88,19 @@
         }
       },
       "required": ["name"]
+    },
+    "ActiveTimer": {
+      "title": "Active Timer",
+      "description": "An active running timer",
+      "type": "object",
+      "properties": {
+        "startTime": { "type": "string", "format": "date-time" },
+        "projectId": { "type": "string" },
+        "activityId": { "type": "string" },
+        "subProjectId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["startTime", "projectId", "activityId"]
     }
   },
   "firestore": {
@@ -110,6 +123,10 @@
     "users/{userId}/settings/general": {
       "schema": "Settings",
       "description": "User's application settings"
+    },
+    "users/{userId}/settings/activeTimer": {
+      "schema": "ActiveTimer",
+      "description": "User's running timer state"
     }
   }
 }

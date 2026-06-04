@@ -73,6 +73,15 @@ service cloud.firestore {
              (!('archived' in data) || data.archived == null || data.archived is bool);
     }
 
+    // ActiveTimer Validation
+    function isValidActiveTimer(data) {
+      return (!('projectId' in data) || data.projectId is string) &&
+             (!('activityId' in data) || data.activityId is string) &&
+             (!('startTime' in data) || data.startTime is timestamp) &&
+             (!('subProjectId' in data) || data.subProjectId == null || data.subProjectId is string) &&
+             (!('notes' in data) || data.notes == null || data.notes is string);
+    }
+
     match /users/{userId} {
       // Identity Protection Gate
       allow read, write: if isOwner(userId);
@@ -114,6 +123,12 @@ service cloud.firestore {
       match /settings/general {
         allow read: if isOwner(userId);
         allow write: if isOwner(userId) && isValidSettings(incoming());
+      }
+
+      match /settings/activeTimer {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId) && isValidActiveTimer(incoming());
+        allow delete: if isOwner(userId);
       }
     }
   }
