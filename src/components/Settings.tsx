@@ -224,6 +224,54 @@ const Settings: React.FC = () => {
               </button>
             </div>
           </section>
+
+          {/* Currency */}
+          <section className={cn(
+             "glass rounded-[2.5rem] p-10 border shadow-2xl md:col-span-2",
+             settings.theme === 'light' ? "bg-white border-slate-200" : "bg-slate-900/40 border-slate-800"
+          )}>
+            <div className="flex items-center gap-4 mb-10">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl border flex items-center justify-center font-extrabold text-sky-400 text-lg",
+                settings.theme === 'light' ? "bg-slate-50 border-slate-200" : "bg-slate-900 border-slate-800"
+              )}>
+                {settings.currency === 'EUR' ? '€' : '$'}
+              </div>
+              <div>
+                <h3 className={cn("font-black uppercase tracking-widest italic", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{t.currency}</h3>
+                <p className="text-xs text-slate-500 font-bold italic opacity-80">{t.currencyDesc}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSettings({ currency: 'EUR' })}
+                className={cn(
+                  "p-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest",
+                  settings.currency === 'EUR' 
+                    ? "bg-sky-500 border-sky-400 text-slate-950 shadow-lg shadow-sky-500/20 active:scale-95"
+                    : settings.theme === 'light'
+                      ? "border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-700 hover:border-slate-300"
+                      : "border-slate-800 bg-slate-900/50 text-slate-500 hover:text-slate-300 hover:border-slate-700"
+                )}
+              >
+                {t.eur}
+              </button>
+              <button
+                onClick={() => setSettings({ currency: 'USD' })}
+                className={cn(
+                  "p-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest",
+                  settings.currency === 'USD' 
+                    ? "bg-sky-500 border-sky-400 text-slate-950 shadow-lg shadow-sky-500/20 active:scale-95"
+                    : settings.theme === 'light'
+                      ? "border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-700 hover:border-slate-300"
+                      : "border-slate-800 bg-slate-900/50 text-slate-500 hover:text-slate-300 hover:border-slate-700"
+                )}
+              >
+                {t.usd}
+              </button>
+            </div>
+          </section>
         </div>
 
         {/* Info Card */}

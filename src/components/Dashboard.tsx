@@ -58,8 +58,8 @@ const Dashboard: React.FC = () => {
   const hoursToday = Math.floor(totalMinutesToday / 60);
   const minutesToday = totalMinutesToday % 60;
 
-  // Last 5 activities
-  const last5 = entries.slice(0, 5);
+  // Last 10 activities
+  const last10 = entries.slice(0, 10);
 
   // Core vs Additional stats
   const coreMinutes = todayEntries
@@ -510,7 +510,7 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className={cn("divide-y", settings.theme === 'light' ? "divide-slate-50" : "divide-slate-800/30")}>
-              {last5.map(entry => {
+              {last10.map(entry => {
                 const project = projects.find(p => p.id === entry.projectId);
                 const activity = (project?.activities || []).find(a => a.id === entry.activityId);
                 return (
@@ -553,6 +553,20 @@ const Dashboard: React.FC = () => {
                     <td className="py-5 text-right">
                       <div className="flex justify-end gap-2">
                         <button 
+                          onClick={() => {
+                            if (entry.projectId && entry.activityId) {
+                              startTimer(entry.projectId, entry.activityId, entry.notes || '', entry.subProjectId || undefined);
+                            }
+                          }}
+                          className={cn(
+                            "p-2 rounded-xl border transition-colors",
+                            settings.theme === 'light' ? "bg-white text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 border-slate-200" : "bg-slate-800 hover:bg-emerald-950/30 text-emerald-400 border-slate-700"
+                          )}
+                          title={settings.language === 'nl' ? "Snel starten" : "Quick start"}
+                        >
+                          <Play size={14} fill="currentColor" />
+                        </button>
+                        <button 
                           onClick={() => startEditing(entry)}
                           className={cn(
                             "p-2 rounded-xl border transition-colors",
@@ -574,7 +588,7 @@ const Dashboard: React.FC = () => {
                   </tr>
                 );
               })}
-              {last5.length === 0 && (
+              {last10.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-600 text-sm italic">{t.noRecentActivities}</td>
                 </tr>

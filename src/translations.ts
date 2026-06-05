@@ -33,7 +33,7 @@ export const translations = {
     stopTimer: 'Stop Timer',
     manual: 'Handmatig',
     todayRegistered: 'Vandaag geregistreerd',
-    recentActivities: 'Laatste 5 activiteiten',
+    recentActivities: 'Laatste 10 activiteiten',
     viewAll: 'Alle bekijken',
     corevsAdditional: 'Kerntaken vs Aanvullend',
     norm: 'Norm',
@@ -149,6 +149,10 @@ export const translations = {
     noResults: 'Geen resultaten',
     editTimeEntry: 'Tijdregistratie Bewerken',
     hoursAbbreviation: 'u',
+    currency: 'Valuta',
+    currencyDesc: 'Kies de gewenste valuta voor je uurtarieven.',
+    eur: 'Euro (€)',
+    usd: 'Dollar ($)',
   },
   en: {
     dashboard: 'Dashboard',
@@ -184,7 +188,7 @@ export const translations = {
     stopTimer: 'Stop Timer',
     manual: 'Manual',
     todayRegistered: 'Registered Today',
-    recentActivities: 'Last 5 Activities',
+    recentActivities: 'Last 10 Activities',
     viewAll: 'View All',
     corevsAdditional: 'Core vs Additional',
     norm: 'Norm',
@@ -300,6 +304,10 @@ export const translations = {
     noResults: 'No results',
     editTimeEntry: 'Edit Time Entry',
     hoursAbbreviation: 'h',
+    currency: 'Currency',
+    currencyDesc: 'Choose the preferred currency for your hourly rates.',
+    eur: 'Euro (€)',
+    usd: 'Dollar ($)',
   }
 };
 

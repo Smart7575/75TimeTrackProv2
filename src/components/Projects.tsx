@@ -13,6 +13,7 @@ import {
   Target,
   Users,
   DollarSign,
+  Euro,
   AlertTriangle,
   Archive,
   ArrowRight,
@@ -355,7 +356,7 @@ const Projects: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.projectName}</label>
                   <input 
                     type="text" 
-                    placeholder="Bijv. Project X"
+                    placeholder={t.projectNamePlaceholder}
                     className={cn(
                       "w-full border rounded-2xl p-4 focus:ring-1 focus:ring-sky-400 outline-none transition-all placeholder:text-slate-400",
                       settings.theme === 'light' ? "bg-sky-50 border-sky-100 text-slate-900" : "bg-slate-950/50 border-slate-800 text-white"
@@ -381,14 +382,14 @@ const Projects: React.FC = () => {
                       });
                     }}
                   >
-                    <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>Selecteer opdrachtgever</option>
+                    <option value="" className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{t.selectClient}</option>
                     {clients.filter(c => !c.archived).map(client => (
                       <option key={client.id} value={client.id} className={settings.theme === 'light' ? "bg-white" : "bg-slate-900"}>{client.name}</option>
                     ))}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.budget} (uur)</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.budget} ({settings.language === 'nl' ? 'uur' : 'hours'})</label>
                   <input 
                     type="number" 
                     className={cn(
@@ -400,7 +401,7 @@ const Projects: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.rate} (€/uur)</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.rate} ({settings.currency === 'EUR' ? '€' : '$'}/{settings.language === 'nl' ? 'uur' : 'hour'})</label>
                   <input 
                     type="number" 
                     className={cn(
@@ -475,9 +476,16 @@ const Projects: React.FC = () => {
                 <div>
                   <h3 className={cn("font-black text-xl italic tracking-tight uppercase", settings.theme === 'light' ? "text-slate-900" : "text-white")}>{project.name}</h3>
                   <div className="flex items-center gap-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    <span className="flex items-center gap-2"><Users size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/> {project.client || 'Geen Klant'}</span>
-                    <span className="flex items-center gap-2"><Target size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/> {project.budget} Uur Budget</span>
-                    <span className="flex items-center gap-2"><DollarSign size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/> €{project.rate}/Uur</span>
+                    <span className="flex items-center gap-2"><Users size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/> {project.client || t.noClient}</span>
+                    <span className="flex items-center gap-2"><Target size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/> {project.budget} {t.hoursBudget}</span>
+                    <span className="flex items-center gap-2">
+                      {settings.currency === 'EUR' ? (
+                        <Euro size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/>
+                      ) : (
+                        <DollarSign size={14} className={settings.theme === 'light' ? "text-slate-400" : "text-slate-600"}/>
+                      )} 
+                      {settings.currency === 'EUR' ? '€' : '$'}{project.rate}/{settings.language === 'nl' ? 'Uur' : 'Hour'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -528,7 +536,7 @@ const Projects: React.FC = () => {
               <div className={cn("h-px w-full mb-10", settings.theme === 'light' ? "bg-slate-100" : "bg-slate-800/50")} />
               
               <div className="flex justify-between items-center mb-8">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">Activiteiten</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">{t.activities}</h4>
                 <button 
                   onClick={() => {
                     if (newActivity) setNewActivity(null);
@@ -554,7 +562,7 @@ const Projects: React.FC = () => {
                       <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">{t.activityName}</label>
                       <input 
                         type="text" 
-                        placeholder="Bijv. Webdesign"
+                        placeholder={t.activityNamePlaceholder}
                         className={cn(
                           "w-full border rounded-2xl p-4 text-sm outline-none focus:ring-1 focus:ring-sky-400 transition-all",
                           settings.theme === 'light' ? "bg-white border-slate-200 text-slate-900" : "bg-slate-900/50 border-slate-800 text-white"
@@ -695,7 +703,7 @@ const Projects: React.FC = () => {
                     </div>
                   ))}
                   {(project.activities || []).filter(a => !a.archived).length === 0 && (!newActivity || newActivity.projectId !== project.id) && (
-                    <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">Geen activiteiten gedefinieerd.</div>
+                    <div className="col-span-full py-10 text-center text-xs text-slate-500 italic font-bold tracking-widest uppercase opacity-40">{t.noActivitiesDefined}</div>
                   )}
                 </div>
 

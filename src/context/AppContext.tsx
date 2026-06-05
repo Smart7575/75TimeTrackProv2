@@ -144,6 +144,7 @@ const DEFAULT_SETTINGS: Settings = {
   language: 'nl',
   theme: 'light',
   useCoreTasks: true,
+  currency: 'EUR',
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -278,7 +279,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const unsubSettings = onSnapshot(doc(db, settingsPath), (snap) => {
       if (snap.exists()) {
-        setState(s => ({ ...s, settings: snap.data() as Settings }));
+        setState(s => ({ ...s, settings: { ...DEFAULT_SETTINGS, ...snap.data() } as Settings }));
       } else {
         setDoc(doc(db, settingsPath), DEFAULT_SETTINGS);
       }

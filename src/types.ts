@@ -52,12 +52,14 @@ export interface TimeEntry {
 
 export type Language = 'nl' | 'en';
 export type Theme = 'light' | 'dark';
+export type Currency = 'EUR' | 'USD';
 
 export interface Settings {
   coreNorm: number; // percentage, default 80
   language: Language;
   theme: Theme;
   useCoreTasks: boolean;
+  currency: Currency;
 }
 
 export interface ContactPerson {
